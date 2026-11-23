@@ -1,0 +1,46 @@
+name: Build Android APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Create Android project structure
+        run: |
+          cp pubspec.yaml pubspec.yaml.bak
+          cp lib/main.dart lib/main.dart.bak
+          flutter create --platforms=android --project-name tractor_kanakku .
+          mv pubspec.yaml.bak pubspec.yaml
+          mv lib/main.dart.bak lib/main.dart
+          sed -i 's/android:label="[^"]*"/android:label="டிராக்டர் கணக்கு"/' android/app/src/main/AndroidManifest.xml
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tractor-kanakku-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          
